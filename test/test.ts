@@ -1,7 +1,22 @@
+/**
+ * Tests for the Model Context Protocol (MCP) Node Fetch tools
+ * 
+ * This test suite validates the functionality of the MCP Node Fetch server
+ * which provides web-related tools (fetch-url, check-status, extract-html-fragment)
+ * to MCP clients.
+ * 
+ * The tests use a local HTTP server to avoid external dependencies,
+ * making the tests more reliable and self-contained.
+ * 
+ * Each test creates a fresh client connected to a new server instance,
+ * performs operations, and validates the results.
+ */
+
 import { test, describe, it, beforeEach, afterEach } from 'node:test';
 import { strict as assert } from 'node:assert';
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { TestServer } from "./helpers/test-server.ts";
 
 /**
  * Test suite for MCP Node Fetch tools.
@@ -55,7 +70,7 @@ async function createConnectedClient(): Promise<Client> {
 
   const transport = new StdioClientTransport({
     command: "node",
-    args: ["--experimental-strip-types", "/Users/matteo/repos/mcp-node-fetch/src/index.ts"]
+    args: ["--no-warnings", "--experimental-strip-types", "/Users/matteo/repos/mcp-node-fetch/src/index.ts"]
   });
 
   await client.connect(transport);
@@ -64,14 +79,26 @@ async function createConnectedClient(): Promise<Client> {
 
 describe('Model Context Protocol Node Fetch Tests', () => {
   let client: Client;
+  let testServer: TestServer;
+  let baseUrl: string;
 
   beforeEach(async () => {
+    // Set up test server
+    testServer = new TestServer();
+    testServer.addCommonRoutes();
+    await testServer.start();
+    baseUrl = testServer.getBaseUrl();
+    
+    // Create client
     client = await createConnectedClient();
   });
 
   afterEach(async () => {
     if (client) {
       await client.close();
+    }
+    if (testServer) {
+      await testServer.stop();
     }
   });
 
@@ -105,7 +132,7 @@ describe('Model Context Protocol Node Fetch Tests', () => {
    */
   it('should fetch JSON data from a URL', async () => {
     const args: FetchUrlArgs = {
-      url: "https://jsonplaceholder.typicode.com/posts/1",
+      url: `${baseUrl}/json`,
       responseType: "json"
     };
 
@@ -123,13 +150,13 @@ describe('Model Context Protocol Node Fetch Tests', () => {
     
     // Check if the content was properly parsed as JSON
     const content = JSON.parse(resultContent.content);
-    assert.ok(content.id === 1, 'Response should contain post with ID 1');
-    assert.ok(content.title, 'Response should include a title');
+    assert.equal(content.id, 1, 'Response should contain post with ID 1');
+    assert.equal(content.title, 'Test Post', 'Response should include the expected title');
   });
 
   it('should check if a URL is accessible', async () => {
     const args: CheckStatusArgs = {
-      url: "https://example.com"
+      url: `${baseUrl}/status`
     };
 
     const result = await client.callTool({
@@ -148,7 +175,7 @@ describe('Model Context Protocol Node Fetch Tests', () => {
 
   it('should extract HTML fragment from a website', async () => {
     const args: ExtractHtmlFragmentArgs = {
-      url: "https://example.com",
+      url: `${baseUrl}/`,
       selector: "h1"
     };
 
@@ -164,12 +191,12 @@ describe('Model Context Protocol Node Fetch Tests', () => {
     const resultContent = JSON.parse(result.content[0].text);
     assert.equal(resultContent.status, 200, 'HTTP status should be 200');
     assert.equal(resultContent.matchCount, 1, 'Should find exactly one h1 element');
-    assert.ok(resultContent.html.includes('<h1>Example Domain</h1>'), 'Should contain the expected h1 content');
+    assert.ok(resultContent.html.includes('<h1>Test Heading</h1>'), 'Should contain the expected h1 content');
   });
 
   it('should handle errors for non-existent URLs', async () => {
     const args: FetchUrlArgs = {
-      url: "https://thisdoesnotexist.example.com",
+      url: `${baseUrl}/error`,
       responseType: "text"
     };
 
@@ -185,7 +212,7 @@ describe('Model Context Protocol Node Fetch Tests', () => {
 
   it('should handle invalid selectors when extracting HTML', async () => {
     const args: ExtractHtmlFragmentArgs = {
-      url: "https://example.com",
+      url: `${baseUrl}/`,
       selector: "nonexistent-element"
     };
 
@@ -201,7 +228,7 @@ describe('Model Context Protocol Node Fetch Tests', () => {
 
   it('should follow redirects by default', async () => {
     const args: FetchUrlArgs = {
-      url: "http://google.com", // This will redirect to https://www.google.com/
+      url: `${baseUrl}/redirect`,
       responseType: "text",
       method: "HEAD"
     };
@@ -217,13 +244,13 @@ describe('Model Context Protocol Node Fetch Tests', () => {
     // Parse the result content
     const resultContent = JSON.parse(result.content[0].text);
     assert.equal(resultContent.status, 200, 'HTTP status should be 200');
-    // Google's redirect behavior might be different, so we'll just check that the URL has changed
-    assert.ok(resultContent.url !== 'http://google.com', 'URL should be redirected');
+    // Check that we were redirected
+    assert.ok(resultContent.url !== `${baseUrl}/redirect`, 'URL should be redirected');
   });
 
   it('should parse HTML fragments when requested', async () => {
     const args: FetchUrlArgs = {
-      url: "https://example.com",
+      url: `${baseUrl}/`,
       responseType: "html-fragment",
       fragmentSelector: "div"
     };
@@ -240,6 +267,6 @@ describe('Model Context Protocol Node Fetch Tests', () => {
     const resultContent = JSON.parse(result.content[0].text);
     assert.equal(resultContent.status, 200, 'HTTP status should be 200');
     assert.ok(resultContent.matchCount > 0, 'Should find at least one div element');
-    assert.ok(resultContent.content.includes('<div>'), 'Should contain div tags');
+    assert.ok(resultContent.content.includes('<div class="content">'), 'Should contain the expected div element');
   });
 });

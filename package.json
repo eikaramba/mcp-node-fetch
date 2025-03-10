@@ -8,7 +8,7 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "dev": "tsc -w",
-    "test": "node --experimental-strip-types --test test/test.ts"
+    "test": "node --no-warnings --experimental-strip-types --test test/test.ts"
   },
   "keywords": [
     "mcp",
