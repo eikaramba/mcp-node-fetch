@@ -3,7 +3,9 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { 
   CallToolRequestSchema, 
   ListToolsRequestSchema, 
-  CallToolResult,
+  CallToolResultSchema,
+} from "@modelcontextprotocol/sdk/types.js";
+import type { 
   Tool
 } from "@modelcontextprotocol/sdk/types.js";
 import { fetch } from "undici";
@@ -174,7 +176,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 });
 
 // Handler for fetch-url tool
-async function handleFetchUrl(args: FetchUrlArgs): Promise<CallToolResult> {
+async function handleFetchUrl(args: FetchUrlArgs): Promise<z.infer<typeof CallToolResultSchema>> {
   try {
     const { url, method, headers, body, timeout, responseType, followRedirects } = args;
     
@@ -284,7 +286,7 @@ async function handleFetchUrl(args: FetchUrlArgs): Promise<CallToolResult> {
 }
 
 // Handler for extract-html-fragment tool
-async function handleExtractHtmlFragment(args: ExtractHtmlFragmentArgs): Promise<CallToolResult> {
+async function handleExtractHtmlFragment(args: ExtractHtmlFragmentArgs): Promise<z.infer<typeof CallToolResultSchema>> {
   try {
     const { url, selector, anchorId, method, headers, body, timeout, followRedirects } = args;
     
@@ -376,7 +378,7 @@ async function handleExtractHtmlFragment(args: ExtractHtmlFragmentArgs): Promise
 }
 
 // Handler for check-status tool
-async function handleCheckStatus(args: CheckStatusArgs): Promise<CallToolResult> {
+async function handleCheckStatus(args: CheckStatusArgs): Promise<z.infer<typeof CallToolResultSchema>> {
   try {
     const { url, timeout } = args;
     
