@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { 
@@ -440,4 +441,7 @@ async function main() {
   }
 }
 
-main();
+main().catch((error) => {
+  console.error('Server error:', error);
+  process.exit(1);
+});
