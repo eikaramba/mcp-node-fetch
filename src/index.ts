@@ -158,11 +158,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   switch (name) {
     case "fetch-url":
-      return handleFetchUrl(FetchUrlArgsSchema.parse(args));
+      return await handleFetchUrl(FetchUrlArgsSchema.parse(args));
     case "extract-html-fragment":
-      return handleExtractHtmlFragment(ExtractHtmlFragmentArgsSchema.parse(args));
+      return await handleExtractHtmlFragment(ExtractHtmlFragmentArgsSchema.parse(args));
     case "check-status":
-      return handleCheckStatus(CheckStatusArgsSchema.parse(args));
+      return await handleCheckStatus(CheckStatusArgsSchema.parse(args));
     default:
       return {
         isError: true,
