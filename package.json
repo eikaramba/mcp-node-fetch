@@ -1,9 +1,10 @@
 {
   "name": "@eikaramba/mcp-node-fetch",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "An MCP server for fetching URLs using undici",
   "type": "module",
   "main": "dist/index.js",
+  "bin": "dist/main.js",
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
